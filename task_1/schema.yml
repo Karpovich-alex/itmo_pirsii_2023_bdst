@@ -1,0 +1,14 @@
+version: 1
+
+pet:
+  type: str
+  age: float
+
+person:
+  name: str
+  age: int
+  hobby: int
+  is_man: bool
+  height: float
+  pet: pet
+
