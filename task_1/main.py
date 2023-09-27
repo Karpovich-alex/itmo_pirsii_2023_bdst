@@ -3,6 +3,23 @@ from typing import Any
 import yaml
 
 
+class Person:
+    def __init__(self, kind, age):
+        self.kind = kind
+        self.age = age
+        pass
+
+
+class Pet:
+    def __init__(self, name, age, is_man, height, pet, grades):
+        self.name = name
+        self.age = age
+        self.is_man = is_man
+        self.height = height
+        self.pet = pet
+        self.grades = grades
+
+
 class Schema:
     def __init__(self, name: str, schema: dict[str, Any]):
         self.name = name
@@ -40,7 +57,6 @@ if __name__ == "__main__":
     person = {
         "name": "Ivan",
         "age": 10,
-        "hobby": "football",
         "is_man": False,
         "height": 100.5,
         "pet": {
@@ -50,18 +66,20 @@ if __name__ == "__main__":
     }
     a = 'schema.yml'
 
-def obj_dfs(visited, graph, current):
-    nodes = list(graph.keys())
 
-    visited.add(nodes[current])
-    print(nodes[current], ': ', graph[nodes[current]])
+    def obj_dfs(visited, graph, current):
+        nodes = list(graph.keys())
 
-    if isinstance(graph[nodes[current]], dict):
-        obj_dfs(visited, graph[nodes[current]], 0)
+        visited.add(nodes[current])
+        print(nodes[current], ': ', graph[nodes[current]])
 
-    if current + 1 < len(nodes):
-        current += 1
-        obj_dfs(visited, graph, current)
+        if isinstance(graph[nodes[current]], dict):
+            obj_dfs(visited, graph[nodes[current]], 0)
 
-visited = set()
-obj_dfs(visited, person, 0)
+        if current + 1 < len(nodes):
+            current += 1
+            obj_dfs(visited, graph, current)
+
+
+    visited = set()
+    obj_dfs(visited, person, 0)

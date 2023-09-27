@@ -1,14 +1,31 @@
 version: 1
+fields_num: 256
 
 pet:
-  type: str
-  age: float
+  kind:
+    id: 1
+    type: str
+  age:
+    id: 2
+    type: float
 
 person:
-  name: str
-  age: int
-  hobby: int
-  is_man: bool
-  height: float
-  pet: pet
+  name:
+    id: 1
+    type: str
+  age:
+    id: 2
+    type: int
+  is_man:
+    id: 3
+    type: bool
+  height:
+    id: 4
+    type: float
+  pet:
+    id: 5
+    type: pet
+  grades:
+    id: 6
+    type: int
 
