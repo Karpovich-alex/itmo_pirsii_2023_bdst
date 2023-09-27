@@ -49,3 +49,19 @@ if __name__ == "__main__":
         },
     }
     a = 'schema.yml'
+
+def obj_dfs(visited, graph, current):
+    nodes = list(graph.keys())
+
+    visited.add(nodes[current])
+    print(nodes[current], ': ', graph[nodes[current]])
+
+    if isinstance(graph[nodes[current]], dict):
+        obj_dfs(visited, graph[nodes[current]], 0)
+
+    if current + 1 < len(nodes):
+        current += 1
+        obj_dfs(visited, graph, current)
+
+visited = set()
+obj_dfs(visited, person, 0)
