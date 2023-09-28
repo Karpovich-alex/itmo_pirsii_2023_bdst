@@ -1,3 +1,4 @@
+import struct
 from typing import Any
 
 import yaml
@@ -28,8 +29,14 @@ class Schema:
 
 class Serializer:
     def __init__(self, schemas: dict[str, Any]):
-        self.schemas = schemas
-        self.available_schemas = self.init_schemas()
+        # self.schemas = schemas
+        # self.available_schemas = self.init_schemas()
+        self.class_matcher = {
+            "int": "q",
+            "bool": "?",
+            "float": "d",
+        }
+        self.str_encoding = "UTF-8"
 
     @classmethod
     def load_from_file(cls, path: str):
@@ -49,8 +56,22 @@ class Serializer:
 
         return schemas
 
-    def serialize(self, obj: Any):
-        pass
+    def serialize(self, obj: Any) -> bytes:
+        """
+        Возвращает сериализованный объект (байты)
+        :param obj:
+        :return:
+        """
+        if isinstance(obj, int):
+            return struct.pack(self.class_matcher["int"], obj)
+        elif isinstance(obj, float):
+            return struct.pack(self.class_matcher["float"], obj)
+        elif isinstance(obj, str):
+            return obj.encode(self.str_encoding)
+        elif isinstance(obj, bool):
+            return struct.pack(self.class_matcher["bool"], obj)
+        else:
+            pass
 
 
 if __name__ == "__main__":
@@ -66,6 +87,10 @@ if __name__ == "__main__":
     }
     a = 'schema.yml'
 
+    a = Serializer({})
+    print(a.serialize(123))
+    print(a.serialize("123"))
+    print(a.serialize(True))
 
     def obj_dfs(visited, graph, current):
         nodes = list(graph.keys())
