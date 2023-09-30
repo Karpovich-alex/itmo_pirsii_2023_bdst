@@ -3,22 +3,7 @@ from typing import Any
 
 import yaml
 
-
-class Person:
-    def __init__(self, kind, age):
-        self.kind = kind
-        self.age = age
-        pass
-
-
-class Pet:
-    def __init__(self, name, age, is_man, height, pet, grades):
-        self.name = name
-        self.age = age
-        self.is_man = is_man
-        self.height = height
-        self.pet = pet
-        self.grades = grades
+from task_1.schema import Person, Pet
 
 
 class Schema:
@@ -28,9 +13,16 @@ class Schema:
 
 
 class Serializer:
-    def __init__(self, schemas: dict[str, Any]):
-        # self.schemas = schemas
-        # self.available_schemas = self.init_schemas()
+    """
+    Класс содержит информацию о всех классах и их схемах
+    имеет методы
+    serialize и deserialize
+
+    """
+    def __init__(self, schemas: dict[str, Any], classes: list | None = None):
+        self.schemas = self.init_schemas(schemas)
+        self._classes = [] if classes is None else self.init_classes(classes)
+
         self.class_matcher = {
             "int": "q",
             "bool": "?",
@@ -38,25 +30,66 @@ class Serializer:
         }
         self.str_encoding = "UTF-8"
 
+    @property
+    def classes(self):
+        return self._classes
+
+    @classes.setter
+    def classes(self, values):
+        self._classes = self.init_classes(values)
+
+    @classes.getter
+    def classes(self):
+        return self._classes
+
     @classmethod
-    def load_from_file(cls, path: str):
+    def load_from_file(cls, path: str, classes: list[object]):
         with open(path, 'r') as file:
             schema = yaml.safe_load(file)
-        return cls(schema)
+        return cls(schema, classes)
 
-    def init_schemas(self):
-        schema_version = self.schemas.get("version", 1)
-        schemas = []
-        for schema_name, schema_data in self.schemas.items():
-            if schema_name in "version":
-                continue
+    def init_schemas(self, schemas: dict[str, Any]):
+        parsed_schemas = {}
+        for schema_name, schema_data in schemas.items():
+            schema_version = schema_data.pop("version", 1)
+            parsed_schemas[(schema_name, schema_version)] = schema_data
 
-            if schema_version == 1:
-                schemas.append(Schema(schema_name, schema_data))
+        return parsed_schemas
 
-        return schemas
+    def init_classes(self, classes: list[Person | Pet]):
+        parsed_classes = {}
+        for class_obj in classes:
+            schema_name = getattr(class_obj, "_schema_name")
+            schema_version = getattr(class_obj, "_schema_version")
+            parsed_classes[(schema_name, schema_version)] = class_obj
 
-    def serialize(self, obj: Any) -> bytes:
+        return parsed_classes
+
+    def deserialize(self, obj: Any, path: str):
+        """
+        Преобразует файл в объект
+        :param obj: Класс, который находится в файле path
+        :param path: Путь до файла
+        :return:
+        """
+        pass
+
+    def serialize(self, obj: Person):  # , path: str
+        """
+        Преобразует объект в сериализованный фалй
+        :param obj: Экземпляр класса, который требуется сериализовать
+        :param path: Путь до папки, в которую требуется сохранить файл
+        :return:
+        """
+        obj_schema = self.schemas.get((obj._schema_name, obj._schema_version))
+        serialized_data = []
+        for field_name, field_metadata in sorted(list(obj_schema.items()), key=lambda x: x[1]["id"]):
+            serialized_data.append(self._serialize(getattr(obj, field_name)))
+
+            pass
+
+
+    def _serialize(self, obj: Any) -> bytes:
         """
         Возвращает сериализованный объект (байты)
         :param obj:
@@ -71,10 +104,14 @@ class Serializer:
         elif isinstance(obj, bool):
             return struct.pack(self.class_matcher["bool"], obj)
         else:
-            pass
+            return self.serialize_complex(obj)
+
+    def serialize_complex(self, obj: Any) -> bytes:
+        pass
 
 
 if __name__ == "__main__":
+    print(Person._schema_name)
     person = {
         "name": "Ivan",
         "age": 10,
@@ -85,12 +122,14 @@ if __name__ == "__main__":
             "age": 5.7,
         },
     }
-    a = 'schema.yml'
+    path_to_schema = 'schema.yml'
 
-    a = Serializer({})
-    print(a.serialize(123))
-    print(a.serialize("123"))
-    print(a.serialize(True))
+    a = Serializer.load_from_file(path_to_schema, [Person, Pet])
+    pet = Pet("dog", 11)
+    a.serialize(pet)
+    # print(a.serialize(123))
+    # print(a.serialize("123"))
+    # print(a.serialize(True))
 
     def obj_dfs(visited, graph, current):
         nodes = list(graph.keys())

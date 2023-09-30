@@ -1,7 +1,5 @@
-version: 1
-fields_num: 256
-
 pet:
+  version: 1
   kind:
     id: 1
     type: str
@@ -10,6 +8,7 @@ pet:
     type: float
 
 person:
+  version: 1
   name:
     id: 1
     type: str
@@ -25,6 +24,7 @@ person:
   pet:
     id: 5
     type: pet
+    version: 1
   grades:
     id: 6
     type: int
