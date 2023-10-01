@@ -19,14 +19,27 @@ class Serializer:
     serialize и deserialize
 
     """
+
     def __init__(self, schemas: dict[str, Any], classes: list | None = None):
+
+        # {(schema_name, schema_version): schema, ...}
         self.schemas = self.init_schemas(schemas)
+
+        # {(schema_name, schema_version): class_obj, ...}
         self._classes = [] if classes is None else self.init_classes(classes)
 
         self.class_matcher = {
             "int": "q",
             "bool": "?",
             "float": "d",
+        }
+        self.type_matcher = {
+            "bool": bool,
+            "str": str,
+            "int": int,
+            "float": float,
+            "list": list,
+            "dict": dict,
         }
         self.str_encoding = "UTF-8"
 
@@ -74,27 +87,56 @@ class Serializer:
         """
         pass
 
-    def serialize(self, obj: Person):  # , path: str
+    def get_type_by_name(self, type_name: str):
+        type_instance = self.type_matcher.get(type_name, None)
+        if type_instance:
+            return type_instance
+
+        # Фильтруем все переданные классы, получаем их ключи и значения (объекты класса)
+        type_instance = list(filter(lambda x: x[0][0] == type_name,
+                                    self.classes.items()))
+        if not type_instance:
+            raise AttributeError("Cant find type_instance")
+
+        # Выбираем первый элемент списка и отдаем класс
+        return type_instance[0][1]
+
+    def serialize(self, obj: Person) -> bytes:  # , path: str
         """
         Преобразует объект в сериализованный фалй
         :param obj: Экземпляр класса, который требуется сериализовать
         :param path: Путь до папки, в которую требуется сохранить файл
         :return:
         """
-        obj_schema = self.schemas.get((obj._schema_name, obj._schema_version))
-        serialized_data = []
+        schema_version = obj._schema_version
+        schema_name = obj._schema_name
+        obj_schema = self.schemas.get((obj._schema_name, schema_version))
+        serialized_data = bytearray()
+        main_buffer = bytearray()
+        # Добавляем название и версию схемы
+        main_buffer.extend(self._serialize(schema_name))
+        main_buffer.extend(self._serialize(schema_version))
+
         for field_name, field_metadata in sorted(list(obj_schema.items()), key=lambda x: x[1]["id"]):
-            serialized_data.append(self._serialize(getattr(obj, field_name)))
+            field_value = getattr(obj, field_name)
+            # TODO: int может быть указано в схеме как float
+            assert isinstance(field_value, self.get_type_by_name(field_metadata["type"])), \
+                "field type in class doesnt match type in schema"
+            serialized_field = self._serialize(field_value)
+            serialized_data.extend(serialized_field)
+            main_buffer.extend(self._serialize(len(serialized_field)))
+        main_buffer.extend(serialized_data)
+        return main_buffer
 
-            pass
-
-
-    def _serialize(self, obj: Any) -> bytes:
+    def _serialize(self, obj: Any, pack_params=None) -> bytes:
         """
         Возвращает сериализованный объект (байты)
         :param obj:
         :return:
         """
+        if pack_params:
+            return struct.pack(pack_params, obj)
+
         if isinstance(obj, int):
             return struct.pack(self.class_matcher["int"], obj)
         elif isinstance(obj, float):
@@ -104,29 +146,31 @@ class Serializer:
         elif isinstance(obj, bool):
             return struct.pack(self.class_matcher["bool"], obj)
         else:
-            return self.serialize_complex(obj)
-
-    def serialize_complex(self, obj: Any) -> bytes:
-        pass
+            return self.serialize(obj)
 
 
 if __name__ == "__main__":
-    print(Person._schema_name)
-    person = {
-        "name": "Ivan",
-        "age": 10,
-        "is_man": False,
-        "height": 100.5,
-        "pet": {
-            "type": "dog",
-            "age": 5.7,
-        },
-    }
+    # print(Person._schema_name)
+    # person = {
+    #     "name": "Ivan",
+    #     "age": 10,
+    #     "is_man": False,
+    #     "height": 100.5,
+    #     "pet": {
+    #         "type": "dog",
+    #         "age": 5.7,
+    #     },
+    # }
     path_to_schema = 'schema.yml'
 
-    a = Serializer.load_from_file(path_to_schema, [Person, Pet])
-    pet = Pet("dog", 11)
-    a.serialize(pet)
+    serializer = Serializer.load_from_file(path_to_schema, [Person, Pet])
+    pet = Pet("dog", 11.)
+    person = Person("Ivan", 10, True, 100.5, pet, 7)
+    ser_obj = serializer.serialize(person)
+    with open("person.d", "wb") as file:
+        file.write(ser_obj)
+
+
     # print(a.serialize(123))
     # print(a.serialize("123"))
     # print(a.serialize(True))
