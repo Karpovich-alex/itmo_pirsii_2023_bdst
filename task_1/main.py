@@ -164,7 +164,7 @@ class Serializer:
             assert isinstance(field_value, self.get_type_by_name(field_metadata["type"])), \
                 "field type in class doesnt match type in schema"
             serialized_field = self._serialize(field_value)
-            print('{:<12}  {:<12}'.format(field_name, serialized_field.hex()))
+            # print('{:<12}  {:<12}'.format(field_name, serialized_field.hex()))
             serialized_data.extend(serialized_field)
             # main_buffer.extend(self._serialize(len(serialized_field)))
         main_buffer.extend(serialized_data)

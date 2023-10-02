@@ -1,4 +1,4 @@
-import protoc_files.task_1.schemas_pb2 as person_pb2
+import protoc_files.task_1.schema_pb2 as person_pb2
 
 # Создаем объект Person
 person = person_pb2.Person()
