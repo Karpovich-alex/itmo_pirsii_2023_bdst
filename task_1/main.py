@@ -26,12 +26,19 @@ class Serializer:
         self.schemas = self.init_schemas(schemas)
 
         # {(schema_name, schema_version): class_obj, ...}
-        self._classes = [] if classes is None else self.init_classes(classes)
+        self._classes = {} if classes is None else self.init_classes(classes)
 
         self.class_matcher = {
             "int": "q",
             "bool": "?",
             "float": "d",
+            "str": "{0}p",
+        }
+        self.class_length = {
+            "q": 8,
+            "?": 1,
+            "d": 8,
+            "L": 4,
         }
         self.type_matcher = {
             "bool": bool,
@@ -42,6 +49,16 @@ class Serializer:
             "dict": dict,
         }
         self.str_encoding = "UTF-8"
+        self._object_size_type = "L"
+
+    @property
+    def object_size_type(self):
+        return self._object_size_type
+
+    @object_size_type.setter
+    def object_size_type(self, v):
+        assert v in self.class_length, f"field type {v} doesnt have a length in class_length dict"
+        self.object_size_type = v
 
     @property
     def classes(self):
@@ -69,7 +86,7 @@ class Serializer:
 
         return parsed_schemas
 
-    def init_classes(self, classes: list[Person | Pet]):
+    def init_classes(self, classes: list[Person | Pet]) -> dict[tuple[str, int], Any]:
         parsed_classes = {}
         for class_obj in classes:
             schema_name = getattr(class_obj, "_schema_name")
@@ -78,14 +95,30 @@ class Serializer:
 
         return parsed_classes
 
-    def deserialize(self, obj: Any, path: str):
+    def deserialize(self, bytes_data: bytes) -> Any:
         """
         Преобразует файл в объект
         :param obj: Класс, который находится в файле path
         :param path: Путь до файла
         :return:
         """
-        pass
+        schema_name, schema_version, end_position = self.get_schema_metadata(bytes_data)
+        obj_schema = self.schemas.get((schema_name, schema_version))
+        obj = self.classes.get((schema_name, schema_version), None)
+        if not obj:
+            raise AttributeError("Cant find class for (%s, %s)", schema_name, schema_version)
+
+        object_params = {}
+        for field_name, field_metadata in sorted(list(obj_schema.items()), key=lambda x: x[1]["id"]):
+            field_data = self._deserialize(bytes_data, field_metadata["type"], start_position=end_position)
+            object_params["field_name"] = field_data
+
+        return obj(**object_params)
+
+    def get_schema_metadata(self, bytes_data) -> tuple[str, int, int]:
+        schema_name, end_position = self._deserialize(bytes_data, "str", 0)
+        schema_version, end_position = self._deserialize(bytes_data, "int", end_position)
+        return schema_name, schema_version, end_position
 
     def get_type_by_name(self, type_name: str):
         type_instance = self.type_matcher.get(type_name, None)
@@ -101,7 +134,7 @@ class Serializer:
         # Выбираем первый элемент списка и отдаем класс
         return type_instance[0][1]
 
-    def serialize(self, obj: Person) -> bytes:  # , path: str
+    def serialize(self, obj: Person, add_obj_size=False) -> bytes:  # , path: str
         """
         Преобразует объект в сериализованный фалй
         :param obj: Экземпляр класса, который требуется сериализовать
@@ -113,6 +146,10 @@ class Serializer:
         obj_schema = self.schemas.get((obj._schema_name, schema_version))
         serialized_data = bytearray()
         main_buffer = bytearray()
+        # Резервируем место под размер объекта
+        if add_obj_size:
+            main_buffer.extend(self._serialize(0, pack_params=self.object_size_type))
+
         # Добавляем название и версию схемы
         main_buffer.extend(self._serialize(schema_name))
         main_buffer.extend(self._serialize(schema_version))
@@ -124,8 +161,11 @@ class Serializer:
                 "field type in class doesnt match type in schema"
             serialized_field = self._serialize(field_value)
             serialized_data.extend(serialized_field)
-            main_buffer.extend(self._serialize(len(serialized_field)))
+            # main_buffer.extend(self._serialize(len(serialized_field)))
         main_buffer.extend(serialized_data)
+        if add_obj_size:
+            obj_size_length = self.class_length[self.object_size_type]
+            main_buffer[:obj_size_length] = self._serialize(len(main_buffer), pack_params=self.object_size_type)
         return main_buffer
 
     def _serialize(self, obj: Any, pack_params=None) -> bytes:
@@ -142,11 +182,41 @@ class Serializer:
         elif isinstance(obj, float):
             return struct.pack(self.class_matcher["float"], obj)
         elif isinstance(obj, str):
-            return obj.encode(self.str_encoding)
+            encoded_string = obj.encode(self.str_encoding)
+            return struct.pack(self.class_matcher["str"].format(len(obj) + 1), encoded_string)
         elif isinstance(obj, bool):
             return struct.pack(self.class_matcher["bool"], obj)
         else:
-            return self.serialize(obj)
+            return self.serialize(obj, add_obj_size=True)
+
+    def _deserialize(self, bytes_data: bytes, obj_type: str, start_position: int = 0, pack_params=None) -> Any:
+        """
+        Возвращает десериализованный объект и позицию, на которой объект закончился
+        :param bytes_data:
+        :param obj_type:
+        :param start_position:
+        :param pack_params:
+        :return: (obj, end_position)
+        """
+        if obj_type in self.class_length.keys():
+            obj_length = self.class_length[obj_type] + 1
+            end_position = start_position + obj_length
+            return struct.unpack(obj_type, bytes_data[start_position:end_position]), end_position
+
+        if obj_type in ("int", "float", " bool"):
+            obj_pack_param = self.class_matcher[obj_type]
+            obj_len = self.class_length[obj_pack_param]
+            return struct.unpack(obj_pack_param, bytes_data[start_position: start_position + obj_len])[0], \
+                   start_position + obj_len
+        elif obj_type == "str":
+            obj_len = struct.unpack("B", bytes_data[start_position:start_position + 1])[0] + 1
+            unpacked_obj = struct.unpack(self.class_matcher["str"].format(obj_len),
+                                         bytes_data[start_position: start_position + obj_len])[0]
+            return unpacked_obj.decode(self.str_encoding), start_position + obj_len
+        else:
+            obj_len, end_position = self._deserialize(bytes_data, self.object_size_type, start_position, )
+            unpacked_obj = self.deserialize(bytes_data[end_position: end_position+obj_len])
+            return unpacked_obj, end_position + obj_len
 
 
 if __name__ == "__main__":
@@ -165,10 +235,15 @@ if __name__ == "__main__":
 
     serializer = Serializer.load_from_file(path_to_schema, [Person, Pet])
     pet = Pet("dog", 11.)
-    person = Person("Ivan", 10, True, 100.5, pet, 7)
-    ser_obj = serializer.serialize(person)
+    # person = Person("Ivan", 10, True, 100.5, pet, 7)
+    ser_obj = serializer.serialize(pet)
+
     with open("person.d", "wb") as file:
         file.write(ser_obj)
+    with open("person.d", "rb") as file:
+        ser_obj = file.read()
+
+    serializer.deserialize(ser_obj)
 
 
     # print(a.serialize(123))
