@@ -1,6 +1,7 @@
 import timeit
 import numpy as np
 from tabulate import tabulate
+from time import perf_counter_ns
 
 setup_our_code = \
 """from main import Serializer
@@ -8,7 +9,7 @@ from task_1.schema import Person, Pet
 path_to_schema = 'schema.yml'
 serializer = Serializer.load_from_file(path_to_schema, [Person, Pet])
 pet = Pet("dog", 11.)
-person = Person("Ivan", 10, True, 100.5, pet, 7)"""
+person = Person("Ivan", 10, True, 100.5, pet, [5, 4, 3])"""
 
 setup_our_code_deserialize = \
 """
@@ -63,7 +64,7 @@ def get_our_ser_size():
     path_to_schema = 'schema.yml'
     serializer = Serializer.load_from_file(path_to_schema, [Person, Pet])
     pet = Pet("dog", 11.)
-    person = Person("Ivan", 10, True, 100.5, pet, 7)
+    person = Person("Ivan", 10, True, 100.5, pet, [5, 4, 3])
     ser_obj = serializer.serialize(person)
     return len(ser_obj)
 
@@ -91,29 +92,6 @@ def get_protobuf_ser_size():
     return len(ser_obj)
 
 
-our_ser_size = get_our_ser_size()
-proto_ser_size = get_protobuf_ser_size()
-from time import perf_counter_ns
-
-number = 100_000
-our_time_ser = np.array(timeit.repeat(setup=setup_our_code, stmt=serialize_our_code, number=number, timer=perf_counter_ns))*1e-6
-protobuf_time_ser = np.array(timeit.repeat(setup=setup_protobuf, stmt=serialize_protobuf, number=number, timer=perf_counter_ns))*1e-6
-
-our_time_deser = np.array(
-    timeit.repeat(setup=setup_our_code + setup_our_code_deserialize, stmt=deserialize_our_code, number=number, timer=perf_counter_ns))*1e-6
-protobuf_time_deser = np.array(
-    timeit.repeat(setup=setup_protobuf + setup_protobuf_deserialize, stmt=deserialize_protobuf, number=number, timer=perf_counter_ns))*1e-6
-
-
-# print('{:>12} {:>15} {:>25}'.format("", "serialize", "deserialize"))
-# print('{:<12} {:<12} {:<12} {:<12} {:<12} {:<12}'.format("Name", "mean", "var", "mean", "var", "size"))
-# print('{:<12} {:.8f} {:.10f} {:.8f} {:.10f} {:>8}'.format("our_code", np.mean(our_time_ser), np.var(our_time_ser),
-#                                                                 np.mean(our_time_deser), np.var(our_time_deser),
-#                                                                 our_ser_size))
-# print('{:<12} {:.8f} {:.10f} {:.8f} {:.10f} {:>8}'.format("protobuf", np.mean(protobuf_time_ser), np.var(protobuf_time_ser),
-#                                                                 np.mean(protobuf_time_deser), np.var(protobuf_time_deser),
-#                                                                 proto_ser_size))
-
 def add_main_header(table):
     rows = table.split("\n")
     header_row = rows[0]
@@ -126,12 +104,26 @@ def add_main_header(table):
     rows.insert(3, rows[1])
     return "\n".join(rows)
 
-floatfrmt="{:.5f}"
-table = tabulate([["Name", "mean", "var", "mean", "var", "size (bytes)"],
-                  ["our_code", floatfrmt.format(np.mean(our_time_ser)), floatfrmt.format(np.var(our_time_ser)),
-                   floatfrmt.format(np.mean(our_time_deser)), floatfrmt.format(np.var(our_time_deser)), our_ser_size],
-                  ["protobuf", floatfrmt.format(np.mean(protobuf_time_ser)), floatfrmt.format(np.var(protobuf_time_ser)),
-                   floatfrmt.format(np.mean(protobuf_time_deser)), floatfrmt.format(np.var(protobuf_time_deser)),
+
+our_ser_size = get_our_ser_size()
+proto_ser_size = get_protobuf_ser_size()
+
+number = 100_000
+our_time_ser = np.array(timeit.repeat(setup=setup_our_code, stmt=serialize_our_code, number=number, timer=perf_counter_ns))*1e-6
+protobuf_time_ser = np.array(timeit.repeat(setup=setup_protobuf, stmt=serialize_protobuf, number=number, timer=perf_counter_ns))*1e-6
+
+our_time_deser = np.array(
+    timeit.repeat(setup=setup_our_code + setup_our_code_deserialize, stmt=deserialize_our_code, number=number, timer=perf_counter_ns))*1e-6
+protobuf_time_deser = np.array(
+    timeit.repeat(setup=setup_protobuf + setup_protobuf_deserialize, stmt=deserialize_protobuf, number=number, timer=perf_counter_ns))*1e-6
+
+
+floatfrmt = "{:.5f}"
+table = tabulate([["Name", "mean", "std", "mean", "std", "size (bytes)"],
+                  ["our_code", floatfrmt.format(np.mean(our_time_ser)), floatfrmt.format(np.std(our_time_ser)),
+                   floatfrmt.format(np.mean(our_time_deser)), floatfrmt.format(np.std(our_time_deser)), our_ser_size],
+                  ["protobuf", floatfrmt.format(np.mean(protobuf_time_ser)), floatfrmt.format(np.std(protobuf_time_ser)),
+                   floatfrmt.format(np.mean(protobuf_time_deser)), floatfrmt.format(np.std(protobuf_time_deser)),
                    proto_ser_size]],
                  headers=["", "serialization (ms)", "deserialization (ms)", ""],
                  tablefmt="github",

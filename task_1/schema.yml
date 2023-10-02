@@ -27,5 +27,15 @@ person:
     version: 1
   grades:
     id: 6
-    type: int
-
+    type: list
+    element_type: int
+  add_data:
+    id: 7
+    type: dict
+    key_type: int
+    element_type:
+      type: dict
+      key_type: str
+      element_type:
+        type: list
+        element_type: int
