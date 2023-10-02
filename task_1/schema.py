@@ -8,7 +8,9 @@ class Pet:
     def __init__(self, kind, age):
         self.kind = kind
         self.age = age
-        pass
+
+    def __repr__(self):
+        return f"<Pet(kind={self.kind}, age={self.age})>"
 
 
 class Person:
@@ -22,3 +24,6 @@ class Person:
         self.height = height
         self.pet = pet
         self.grades = grades
+    def __repr__(self):
+        return f"<Person(name={self.name}, age={self.age}, is_man={self.is_man}, height={self.height}, " \
+               f"pet={self.pet}, grades={self.grades})>"
