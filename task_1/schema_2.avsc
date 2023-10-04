@@ -1,0 +1,13 @@
+#pip install avro-python3 сначала библиотеку установить
+
+{"namespace": "example_2.avro",
+  {
+    "type": "record",
+    "name": "Person",
+    "fields": [
+      {"name": "name", "type": "string"},
+      {"name": "age", "type": "int"},
+      {"name": "address", "type": "string"}
+    ]
+  }
+}
