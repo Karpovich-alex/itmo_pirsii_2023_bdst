@@ -1,0 +1,40 @@
+{"namespace": "example.avro",
+ "type": "record",
+ "name": "Person",
+ "fields": [
+     {"name": "name", "type": "string"},
+     {"name": "age",  "type": "int"},
+     {"name": "is_man", "type": "boolean"},
+     {"name": "height", "type": "float"},
+     {"name": "pet", "type": {
+        "type": "record",
+        "name": "Pet",
+        "fields": [
+           {"name": "kind", "type": "string"},
+           {"name": "age",  "type": "float"}
+            ]
+         }
+     },
+     {"name": "grades", "type": {
+         "type": "array",
+         "items" : "int",
+         "default": []
+         }
+      },
+     {"name": "add_data", "type": {
+         "type": "map",
+         "values" : {
+             "type": "map",
+             "values": {
+                "type": "array",
+                "items" : "int",
+                "default": []
+                 }
+             },
+         "default": {}
+         }
+      }  
+ ]
+}
+
+
