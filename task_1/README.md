@@ -104,10 +104,23 @@ pet:
 ## Benchmark
 number of iterations = 100_000
 
-|            |serialization (ms) ||             deserialization (ms)              |                          |                |
-|------------|---------|---------|----------------------|--------------------------|----------------|
-| Name       | mean    | var     | mean                 | var                      | size (bytes)   |
-| ---------- |---------|---------|----------------------| ------------------------ | -------------- |
-| our_code | 7.81168     | 0.40426   | 7.32086              | 0.24900                | 164            |
-| protobuf   | 9.68578 | 6.53558 | 34.51494             | 27.07078                 | 39             |
-| avro       | 11601.28148 | 378.22856 | 38018.89886          | 705.65521        | 747            |
+perf_counter_ns*1e+6
+
+|            |serialization (ms) |           |             deserialization (ms)              |           |                |
+|------------|---------|-----------|----------------------|-----------|----------------|
+| Name       | mean    | std       | mean                 | std       | size (bytes)   |
+| our_code | 0.03124     | 0.04420   | 0.03462              | 0.010975   | 164            |
+| protobuf   | 0.00798 | 0.00097   | 0.00099             | 0.02920  | 39             |
+| avro       | 0.34592 | 0.37370 | 0.36354          | 0.10084 | 747            |
+
+
+perf_counter_ns*1e+6
+serialization = define object + serialize
+deserialization = deserialize + construct class\json-str
+
+|            |serialization (ms) |           |             deserialization (ms)              |           |                |
+|------------|---------|-----------|----------------------|-----------|----------------|
+| Name       | mean    | std       | mean                 | std       | size (bytes)   |
+| our_code | 0.03104     | 0.00686   | 0.03513              | 0.01042   | 164            |
+| protobuf   | 0.00108 | 0.00097   | 0.08516             | 0.02492  | 39             |
+| avro       | 0.33317 | 0.07996 | 0.35643          | 0.05904 | 747            |

@@ -23,5 +23,9 @@ pet.age = 11.0
 binary_Person = person.SerializeToString()
 
 # Теперь мы можем использовать binary_Peson для передачи или хранения данных
-with open("person.protobuf", "wb") as file:
+with open("person_1.protobuf", "wb") as file:
   file.write(binary_Person)
+
+person = person_pb2.Person()
+print(person.ParseFromString(binary_Person))
+print(person)
