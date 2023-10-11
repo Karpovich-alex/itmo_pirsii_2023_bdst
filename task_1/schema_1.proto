@@ -1,0 +1,30 @@
+syntax = "proto3";
+
+message Pet {
+    string type = 1;
+    float age = 2;
+};
+
+message Person {
+    string name = 1;
+    int64 age = 2;
+    bool is_man = 3;
+    float height = 4;
+    Pet pet = 5;
+    repeated int64 grades = 6;
+    repeated Add_data add_data = 7;
+}
+
+message Grade {
+    int64 number = 1;
+};
+
+message Add_data {
+    optional int64 key = 8;
+    repeated Add_data_level_1 add_data_level_1 = 9;
+}
+
+message Add_data_level_1 {
+    optional string key = 10;
+    repeated int64 values = 11;
+};
