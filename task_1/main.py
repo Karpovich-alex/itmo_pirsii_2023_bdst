@@ -302,17 +302,6 @@ class Serializer:
 
 
 if __name__ == "__main__":
-    # print(Person._schema_name)
-    # person = {
-    #     "name": "Ivan",
-    #     "age": 10,
-    #     "is_man": False,
-    #     "height": 100.5,
-    #     "pet": {
-    #         "type": "dog",
-    #         "age": 5.7,
-    #     },
-    # }
     path_to_schema = 'schema.yml'
 
     serializer = Serializer.load_from_file(path_to_schema, [Person, Pet])
@@ -329,25 +318,3 @@ if __name__ == "__main__":
 
     new_obj = serializer.deserialize(ser_obj)
     print(new_obj)
-
-
-    # print(a.serialize(123))
-    # print(a.serialize("123"))
-    # print(a.serialize(True))
-
-    def obj_dfs(visited, graph, current):
-        nodes = list(graph.keys())
-
-        visited.add(nodes[current])
-        print(nodes[current], ': ', graph[nodes[current]])
-
-        if isinstance(graph[nodes[current]], dict):
-            obj_dfs(visited, graph[nodes[current]], 0)
-
-        if current + 1 < len(nodes):
-            current += 1
-            obj_dfs(visited, graph, current)
-
-
-    visited = set()
-    # obj_dfs(visited, person, 0)

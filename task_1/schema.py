@@ -19,7 +19,7 @@ class Person:
     _schema_name = "person"
     _schema_version = 1
 
-    def __init__(self, name: str, age: int, is_man: bool, height: float, pet: Pet, grades: list[int],add_data: Any):
+    def __init__(self, name: str, age: int, is_man: bool, height: float, pet: Pet, grades: list[int], add_data: Any):
         self.name = name
         self.age = age
         self.is_man = is_man
