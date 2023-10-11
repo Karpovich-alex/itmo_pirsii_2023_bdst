@@ -29,13 +29,14 @@ class Serializer:
         self._classes = {} if classes is None else self.init_classes(classes)
 
         self.class_matcher = {
-            "int": "q",
+            "int": "Q",
             "bool": "?",
             "float": "d",
             "str": "{0}p",
         }
         self.class_length = {
             "q": 8,
+            "Q": 8,
             "?": 1,
             "d": 8,
             "L": 4,
@@ -159,14 +160,16 @@ class Serializer:
 
         # Добавляем название и версию схемы
         main_buffer.extend(self._serialize(schema_name))
+        assert isinstance(schema_version, int), "schema_version type should be int"
         main_buffer.extend(self._serialize(schema_version))
 
         for field_name, field_metadata in sorted(list(obj_schema.items()), key=lambda x: x[1]["id"]):
             field_value = getattr(obj, field_name)
             # TODO: int может быть указано в схеме как float
-            # TODO: проверка типа элементов списка
-            assert isinstance(field_value, self.get_type_by_name(field_metadata["type"])), \
-                "field type in class doesnt match type in schema"
+            # TODO: проверка типа элементов списка и словаря
+            assert isinstance(field_value, self.get_type_by_name(field_metadata["type"])) or \
+                   (type(field_value) == "float" and field_metadata["type"] == "float"), \
+                "field type (%s) in class does not match type in schema" % type(field_value)
             serialized_field = self._serialize(field_value)
             # print('{:<12}  {:<12}'.format(field_name, serialized_field.hex()))
             serialized_data.extend(serialized_field)
@@ -175,6 +178,21 @@ class Serializer:
             obj_size_length = self.class_length[self.object_size_type]
             main_buffer[:obj_size_length] = self._serialize(len(main_buffer), pack_params=self.object_size_type)
         return main_buffer
+
+    # def check_field_type(self, field_value, field_metadata):
+    #     schema_type = self.get_type_by_name(field_metadata["type"])
+    #     if field_metadata["type"] == "list":
+    #         el_type = field_metadata["element_type"]
+    #         if el_type in ("list", "dict"):
+    #             self.check_field_type()
+    #     elif field_metadata["type"] == "dict":
+    #         el_type = field_metadata["element_type"]
+    #         key_type = field_metadata["key_type"]
+    #         for key, value in field_value.items():
+    #             self.check_field_type(field_value, field_metadata["type"])
+    #     else:  # проверяем int, float, bool, str, <class>
+    #         assert isinstance(field_value, schema_type) or \
+    #                (type(field_value) == "float" and field_metadata["type"] == "float")
 
     def _serialize(self, obj: Any, pack_params=None) -> bytes:
         """
