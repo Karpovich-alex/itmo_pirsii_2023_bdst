@@ -1,6 +1,7 @@
 import avro.schema
 from avro.datafile import DataFileReader, DataFileWriter
 from avro.io import DatumReader, DatumWriter
+from fastavro import writer, reader, parse_schema
 
 # Загрузка схемы из файла
 schema = avro.schema.Parse(open("person.avsc").read())
