@@ -13,9 +13,12 @@ services:
       - SPARK_LOCAL_STORAGE_ENCRYPTION_ENABLED=no
       - SPARK_SSL_ENABLED=no
       - SPARK_USER=spark
+      - HADOOP_HOME="/opt/hadoop"
     ports:
       - '8080:8080'
       - '7077:7077'
+      - '6060:6060'
+      - '20002:20002'
     volumes:
        - ./apps:/opt/spark-apps
        - ./data:/opt/spark-data
@@ -24,13 +27,15 @@ services:
     environment:
       - SPARK_MODE=worker
       - SPARK_MASTER_URL=spark://spark:7077
-      - SPARK_WORKER_MEMORY=2G
+      - SPARK_WORKER_MEMORY=5G
+      - SPARK_DRIVER_MEMORY=5G
       - SPARK_WORKER_CORES=2
       - SPARK_RPC_AUTHENTICATION_ENABLED=no
       - SPARK_RPC_ENCRYPTION_ENABLED=no
       - SPARK_LOCAL_STORAGE_ENCRYPTION_ENABLED=no
       - SPARK_SSL_ENABLED=no
       - SPARK_USER=spark
+      - HADOOP_HOME="/opt/hadoop"
     volumes:
       - ./apps:/opt/spark-apps
       - ./data:/opt/spark-data
