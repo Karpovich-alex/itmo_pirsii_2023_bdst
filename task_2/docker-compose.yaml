@@ -20,15 +20,15 @@ services:
       - '6060:6060'
       - '20002:20002'
     volumes:
-       - ./apps:/opt/spark-apps
-       - ./data:/opt/spark-data
+       - ./apps:/opt/spark-apps:rw
+       - ./data:/opt/spark-data:rw
   spark-worker:
     image: docker.io/bitnami/spark:3.5.0
     environment:
       - SPARK_MODE=worker
       - SPARK_MASTER_URL=spark://spark:7077
-      - SPARK_WORKER_MEMORY=5G
-      - SPARK_DRIVER_MEMORY=5G
+      - SPARK_WORKER_MEMORY=6G
+      - SPARK_DRIVER_MEMORY=6G
       - SPARK_WORKER_CORES=2
       - SPARK_RPC_AUTHENTICATION_ENABLED=no
       - SPARK_RPC_ENCRYPTION_ENABLED=no
@@ -37,5 +37,5 @@ services:
       - SPARK_USER=spark
       - HADOOP_HOME="/opt/hadoop"
     volumes:
-      - ./apps:/opt/spark-apps
-      - ./data:/opt/spark-data
+      - ./apps:/opt/spark-apps:rw
+      - ./data:/opt/spark-data:rw
