@@ -1,0 +1,13 @@
+{"namespace": "example.avro",
+ "type": "record",
+ "name": "Person",
+ "fields": [
+     {"name": "sonnets", "type": {
+         "type": "array",
+         "items" : "int",
+         "default": []
+         }
+      }
+ ]
+}
+
